@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import time
 import base64
+import json
+from init_data import default_exp_invalide_second
 from compat import text_type, binary_type, string_types
+from exception_s import ExpLosedError, ExpTypeError
 
 def base64urlencode(data):
     return base64.urlsafe_b64encode(data).rstrip('=')
@@ -24,7 +27,7 @@ def force_bytes(value):
         raise TypeError('Expected a string value')
 
 
-def base64url_decode(input):
+def base64urldecode(input):
     if isinstance(input, text_type):
         input = input.encode('ascii')
 
@@ -35,25 +38,29 @@ def base64url_decode(input):
 
     return base64.urlsafe_b64decode(input)
 
-def is_failure(exp, failure_time=300):
+def is_failure(paload):
     '''
         desc: 验证所给exp是否失效
         input: 
-            exp : 
-                desc: 时间戳
+            paload : 
+                desc: 信息摘要
                 type: string
-            failure_time ：
-                           desc: 从生成的时刻到失效时间间隔的总秒数
-                           type: s (秒)
-                           default: 300
+            
         return: is_failure :
+                            desc: 是否失效
                             type: boolean
                             default: false
     '''
     # try:
     #     exp = int(exp)
     # 无效的时间戳异常  todo
-        
-
-    is_failure = True if int(time.time())-exp > failure_time else False
-    return is_failure
+    paload = json.loads(base64urldecode(force_unicode(paload)))
+    if paload.has_key('exp'):
+        exp = paload['exp']
+        if isinstance(exp, int):
+            is_failure = True if int(time.time()) > exp else False
+            return is_failure
+        else:
+            raise ExpTypeError('Type error for exp.')
+    else:
+        raise ExpLosedError('Exp is Losed for paload.')

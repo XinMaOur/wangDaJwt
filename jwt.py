@@ -4,9 +4,9 @@ import json
 import datetime
 import time
 import chardet
-
-from utils import is_failure, base64urlencode, force_unicode, base64url_decode
-from init_data import header, secret
+from exception_s import TimeoutTokenError, FormatError, LosedError, InvalidTokenError
+from utils import is_failure, base64urlencode, force_unicode, base64urldecode
+from init_data import header, secret, default_exp_invalide_second
 from algorithms import HMACAlgorithm
 import sys
 reload(sys)
@@ -34,7 +34,7 @@ class wdJwt(object):
 		return self.header
 
 
-	def generate_payload(self, msg, exp=int(time.time())+300):
+	def generate_payload(self, msg, exp=int(time.time())+default_exp_invalide_second):
 		'''
 			desc: 生成payload
 			input: 
@@ -62,7 +62,7 @@ class wdJwt(object):
 			return: signature
 		'''
 		msg = self.header + '.' + self.payload
-		self.signature = hmac.sign(msg, self.secret)
+		self.signature = base64urlencode(hmac.sign(msg, self.secret))
 		
 		return self.signature
 	
@@ -82,32 +82,51 @@ class wdJwt(object):
 						2.token : losed 已丢失失效包括已篡改
 						3.token : error format 格式错误失效
 		'''
-		print "token", token, len(token.split('.'))
 		if len(token.split('.')) == 3:
 			hea, pal, sig = token.split('.')
 			msg = force_unicode(hea + '.' + pal)
-			not_falsified =  hmac.verify(msg, self.secret, sig)
-			print "not_falsified", not_falsified
-			return not_falsified
-		# else: todo
-		# 	raise 3.token : error format 格式错误失效
-		
+			not_losed =  hmac.verify(msg, self.secret, base64urldecode(sig))
+			if not not_losed:
+				raise LosedError('Token is losed.')
+			elif is_failure(pal):
+				raise TimeoutTokenError('Token is timeout.')
+			return not_losed
+		else: 
+		 	raise FormatError('Bad format for token.') 
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 	wd = wdJwt()
+	start_time = int(time.time())
 	print 'header: ',  wd.generate_header()
 	payload_str = force_unicode(json.dumps({
 				'nickname' : u'王强',
 				'gender': 1
 				}))
 
-	# payload_str = json.dumps({
-	# 			'nickname' : 'wangqiang',
-	# 			'gender': 1
-	# 			})
 	print 'payload: ',  wd.generate_payload(payload_str)
 	print 'signature: ', wd.generate_signature()
 	first_token = wd.generate_token()
 	print 'token: ', first_token
 	print 'token code: ', chardet.detect(first_token)
 	print 'verify token', wd.verify_token(first_token)
+	# FormatError
+	try:
+		wd.verify_token(first_token+".d")
+	except Exception, e:
+		print "verify token ", e 
+	
+	# LosedError
+	try:
+		wd.verify_token(first_token+"s")
+	except Exception, e:
+		print "verify token", e
+
+
+	# TimeoutTokenError
+	time.sleep(7)
+	try:
+		wd.verify_token(first_token)
+	except Exception, e:
+		print "verify token", e
+
