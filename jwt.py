@@ -4,7 +4,7 @@ import json
 import datetime
 import time
 import chardet
-from exception_s import TimeoutTokenError, FormatError, LosedError, InvalidTokenError
+from exceptions import TimeoutTokenError, FormatError, LosedError, InvalidTokenError
 from utils import is_failure, base64urlencode, force_unicode, base64urldecode
 from init_data import header, secret, default_exp_invalide_second
 from algorithms import HMACAlgorithm

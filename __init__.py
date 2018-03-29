@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from exception_s import (
+from exceptions import (
 	TimeoutTokenError, FormatError, LosedError, 
 	InvalidTokenError, ExpLosedError, ExpTypeError,
     InvalidPaloadError

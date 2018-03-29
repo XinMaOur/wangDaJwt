@@ -4,7 +4,7 @@ import base64
 import json
 from init_data import default_exp_invalide_second
 from compat import text_type, binary_type, string_types
-from exception_s import ExpLosedError, ExpTypeError
+from exceptions import ExpLosedError, ExpTypeError
 
 def base64urlencode(data):
     return base64.urlsafe_b64encode(data).rstrip('=')
